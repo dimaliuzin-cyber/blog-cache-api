@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
         title=settings.app_title,
         description=settings.app_description,
         version=settings.app_version,
+        lifespan=lifespan,
     )
 
     app.include_router(system_router)
