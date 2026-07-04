@@ -93,7 +93,13 @@ async def test_get_post_returns_404_when_post_not_found(
 
     assert response.status_code == 404
     assert response.json() == {
-        "detail": "Post with id=999999 was not found",
+        "error": {
+            "code": "post_not_found",
+            "message": "Post not found",
+            "details": {
+                "post_id": 999999,
+            },
+        },
     }
 
 
@@ -140,7 +146,13 @@ async def test_update_post_returns_404_when_post_not_found(
 
     assert response.status_code == 404
     assert response.json() == {
-        "detail": "Post with id=999999 was not found",
+        "error": {
+            "code": "post_not_found",
+            "message": "Post not found",
+            "details": {
+                "post_id": 999999,
+            },
+        },
     }
 
 
@@ -176,7 +188,13 @@ async def test_delete_post_returns_404_when_post_not_found(
 
     assert response.status_code == 404
     assert response.json() == {
-        "detail": "Post with id=999999 was not found",
+        "error": {
+            "code": "post_not_found",
+            "message": "Post not found",
+            "details": {
+                "post_id": 999999,
+            },
+        },
     }
 
 
@@ -187,3 +205,9 @@ async def test_post_id_must_be_positive(
     response = await client.get("/posts/0")
 
     assert response.status_code == 422
+
+    data = response.json()
+
+    assert data["error"]["code"] == "validation_error"
+    assert data["error"]["message"] == "Request validation failed"
+    assert "errors" in data["error"]["details"]

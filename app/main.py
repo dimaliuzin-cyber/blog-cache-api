@@ -7,6 +7,7 @@ from app.api.routers.system import router as system_router
 from app.api.routers.posts import router as posts_router
 from app.core.config import get_settings
 from app.core.database import close_database
+from app.core.exception_handlers import register_exception_handlers
 
 
 @asynccontextmanager
@@ -24,6 +25,8 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         lifespan=lifespan,
     )
+
+    register_exception_handlers(app)
 
     app.include_router(system_router)
     app.include_router(posts_router)

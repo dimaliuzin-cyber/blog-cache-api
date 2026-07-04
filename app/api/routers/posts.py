@@ -28,13 +28,6 @@ async def get_post_service(
     return PostService(session)
 
 
-def raise_post_not_found(error: PostNotFoundError) -> None:
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Post with id={error.post_id} was not found",
-    ) from error
-
-
 @router.post(
     "",
     response_model=PostRead,
@@ -60,10 +53,7 @@ async def get_post(
     post_id: Annotated[int, Path(gt=0)],
     service: Annotated[PostService, Depends(get_post_service)],
 ) -> PostRead:
-    try:
-        post = await service.get_post(post_id)
-    except PostNotFoundError as error:
-        raise_post_not_found(error)
+    post = await service.get_post(post_id)
 
     return PostRead.model_validate(post)
 
@@ -79,13 +69,10 @@ async def update_post(
     post_update: PostUpdate,
     service: Annotated[PostService, Depends(get_post_service)],
 ) -> PostRead:
-    try:
-        post = await service.update_post(
-            post_id=post_id,
-            post_update=post_update,
-        )
-    except PostNotFoundError as error:
-        raise_post_not_found(error)
+    post = await service.update_post(
+        post_id=post_id,
+        post_update=post_update,
+    )
 
     return PostRead.model_validate(post)
 
@@ -99,9 +86,6 @@ async def delete_post(
     post_id: Annotated[int, Path(gt=0)],
     service: Annotated[PostService, Depends(get_post_service)],
 ) -> Response:
-    try:
-        await service.delete_post(post_id)
-    except PostNotFoundError as error:
-        raise_post_not_found(error)
+    await service.delete_post(post_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
