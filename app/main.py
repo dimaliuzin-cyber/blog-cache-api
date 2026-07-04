@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.routers.system import router as system_router
+from app.api.routers.posts import router as posts_router
 from app.core.config import get_settings
 from app.core.database import close_database
 
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(system_router)
+    app.include_router(posts_router)
 
     return app
 
