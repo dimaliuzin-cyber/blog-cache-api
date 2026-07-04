@@ -3,15 +3,16 @@ from typing import Annotated
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     Path,
     Response,
     status,
 )
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
-from app.posts import PostNotFoundError, PostService
+from app.core.redis import get_redis
+from app.posts import PostService
 from app.schemas.posts import (
     PostCreate,
     PostRead,
@@ -24,8 +25,12 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 async def get_post_service(
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    redis_client: Annotated[Redis, Depends(get_redis)]
 ) -> PostService:
-    return PostService(session)
+    return PostService(
+        session=session,
+        redis_client=redis_client,
+    )
 
 
 @router.post(

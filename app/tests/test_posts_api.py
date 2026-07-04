@@ -30,13 +30,15 @@ async def clean_posts_table() -> AsyncGenerator[None, None]:
 @pytest_asyncio.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     app = create_app()
-    transport = ASGITransport(app=app)
 
-    async with AsyncClient(
-        transport=transport,
-        base_url="http://test",
-    ) as client:
-        yield client
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+        ) as client:
+            yield client
 
 
 @pytest.mark.asyncio

@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     database_url: str = Field(description="URL подключения к PostgreSQL.")
     redis_url: str = Field(description="URL подключения к Redis.")
 
+    post_cache_ttl_seconds: int = Field(
+        default=300,
+        gt=0,
+        description="Время жизни кеша поста в Redis в секундах.",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
