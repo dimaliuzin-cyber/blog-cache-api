@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     database_url: str = Field(description="URL подключения к PostgreSQL")
     redis_url: str = Field(description="URL подключения к Redis")
 
+    sqlalchemy_echo: bool = Field(
+        default=False,
+        description="Включает подробные SQL-логи SQLAlchemy",
+    )
+
     post_cache_ttl_seconds: int = Field(
         default=300,
         gt=0,

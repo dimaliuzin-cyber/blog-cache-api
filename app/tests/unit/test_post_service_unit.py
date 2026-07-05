@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, UTC
 
 import pytest
@@ -205,3 +206,97 @@ async def test_update_post_invalidates_cache_without_redis() -> None:
 
     assert cache.deleted_post_ids == [created_post.id]
     assert created_post.id not in cache.posts
+
+
+@pytest.mark.anyio
+async def test_get_post_logs_cache_hit(caplog: pytest.LogCaptureFixture) -> None:
+    repository = FakePostRepository()
+    cache = FakePostCache()
+
+    cached_post = PostRead(
+        id=10,
+        title="From cache",
+        content="Cache content",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+
+    cache.posts[cached_post.id] = cached_post
+
+    service = PostService(
+        repository=repository,
+        cache=cache,
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.posts.service"):
+        await service.get_post(cached_post.id)
+
+    assert "cache hit post_id=10" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_get_post_logs_cache_miss(caplog: pytest.LogCaptureFixture) -> None:
+    repository = FakePostRepository()
+    cache = FakePostCache()
+
+    service = PostService(
+        repository=repository,
+        cache=cache,
+    )
+
+    created_post = await repository.create_post(
+        PostCreate(
+            title="Cached title",
+            content="Some cached content",
+        ),
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.posts.service"):
+        await service.get_post(created_post.id)
+
+    assert f"cache miss post_id={created_post.id}" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_get_post_logs_not_found(caplog: pytest.LogCaptureFixture) -> None:
+    repository = FakePostRepository()
+
+    service = PostService(repository=repository)
+
+    with caplog.at_level(logging.WARNING, logger="app.posts.service"):
+        with pytest.raises(PostNotFoundError):
+            await service.get_post(999_999)
+
+    assert "post not found post_id=999999" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_write_operations_log_events(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    repository = FakePostRepository()
+    cache = FakePostCache()
+
+    service = PostService(
+        repository=repository,
+        cache=cache,
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.posts.service"):
+        created_post = await service.create_post(
+            PostCreate(
+                title="Title",
+                content="Content",
+            ),
+        )
+
+        await service.update_post(
+            created_post.id,
+            PostUpdate(title="New title"),
+        )
+
+        await service.delete_post(created_post.id)
+
+    assert f"post created post_id={created_post.id}" in caplog.text
+    assert f"post updated post_id={created_post.id}" in caplog.text
+    assert f"post deleted post_id={created_post.id}" in caplog.text

@@ -8,6 +8,8 @@ from app.api.routers.system import router as system_router
 from app.core.config import get_settings
 from app.core.database import close_database
 from app.core.exception_handlers import register_exception_handlers
+from app.core.logging_config import configure_logging
+from app.core.middleware import RequestIdMiddleware
 from app.core.redis import close_redis, create_redis_client
 
 
@@ -23,6 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 def create_app() -> FastAPI:
+    configure_logging()
     settings = get_settings()
 
     app = FastAPI(
@@ -31,6 +34,8 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         lifespan=lifespan,
     )
+
+    app.add_middleware(RequestIdMiddleware)
 
     register_exception_handlers(app)
 

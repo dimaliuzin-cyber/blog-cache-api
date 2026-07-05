@@ -1,3 +1,4 @@
+import logging
 from typing import Protocol
 
 from redis.asyncio import Redis
@@ -9,6 +10,9 @@ from app.posts.exceptions import PostNotFoundError
 from app.posts.models import Post
 from app.posts.repository import PostRepository
 from app.schemas.posts import PostCreate, PostRead, PostUpdate
+
+
+logger = logging.getLogger(__name__)
 
 
 class PostRepositoryProtocol(Protocol):
@@ -77,6 +81,8 @@ class PostService:
         await self._commit_transaction()
         await self._refresh_instance(post)
 
+        logger.info("post created post_id=%s", post.id)
+
         return post
 
     async def get_post(self, post_id: int) -> PostRead:
@@ -84,11 +90,15 @@ class PostService:
             cached_post = await self._cache.get_post(post_id)
 
             if cached_post is not None:
+                logger.info("cache hit post_id=%s", post_id)
                 return cached_post
+
+            logger.info("cache miss post_id=%s", post_id)
 
         post = await self._repository.get_post_by_id(post_id)
 
         if post is None:
+            logger.warning("post not found post_id=%s", post_id)
             raise PostNotFoundError(post_id)
 
         post_read = PostRead.model_validate(post)
@@ -109,13 +119,23 @@ class PostService:
         )
 
         if post is None:
+            logger.warning("post not found post_id=%s operation=update", post_id)
             raise PostNotFoundError(post_id)
 
         await self._commit_transaction()
         await self._refresh_instance(post)
 
+        cache_invalidated = False
+
         if self._cache is not None:
             await self._cache.delete_post(post_id)
+            cache_invalidated = True
+
+        logger.info(
+            "post updated post_id=%s cache_invalidated=%s",
+            post_id,
+            cache_invalidated,
+        )
 
         return post
 
@@ -123,12 +143,22 @@ class PostService:
         post = await self._repository.delete_post(post_id)
 
         if post is None:
+            logger.warning("post not found post_id=%s operation=delete", post_id)
             raise PostNotFoundError(post_id)
 
         await self._commit_transaction()
 
+        cache_invalidated = False
+
         if self._cache is not None:
             await self._cache.delete_post(post_id)
+            cache_invalidated = True
+
+        logger.info(
+            "post deleted post_id=%s cache_invalidated=%s",
+            post_id,
+            cache_invalidated,
+        )
 
         return post
 
