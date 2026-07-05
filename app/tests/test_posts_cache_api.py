@@ -256,3 +256,103 @@ async def test_get_post_after_update_returns_fresh_post_not_stale_cache(
     finally:
         await redis_client.delete(cache_key)
         await redis_client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_cache_integration_create_get_update_invalidate_and_recaches(
+    client: AsyncClient,
+) -> None:
+    redis_client = get_redis_client()
+    cache_key: str | None = None
+
+    try:
+        create_response = await client.post(
+            "/posts",
+            json={
+                "title": "Old cached title",
+                "content": "Original cached content",
+            },
+        )
+
+        assert create_response.status_code == 201
+
+        created_post = create_response.json()
+        post_id = created_post["id"]
+        cache_key = f"post:{post_id}"
+
+        await redis_client.delete(cache_key)
+
+        assert await redis_client.get(cache_key) is None
+
+        first_get_response = await client.get(f"/posts/{post_id}")
+
+        assert first_get_response.status_code == 200
+
+        first_get_data = first_get_response.json()
+
+        assert first_get_data["id"] == post_id
+        assert first_get_data["title"] == "Old cached title"
+        assert first_get_data["content"] == "Original cached content"
+
+        old_cached_payload = await redis_client.get(cache_key)
+
+        assert old_cached_payload is not None
+
+        old_cached_post = PostRead.model_validate_json(old_cached_payload)
+
+        assert old_cached_post.id == post_id
+        assert old_cached_post.title == "Old cached title"
+        assert old_cached_post.content == "Original cached content"
+
+        update_response = await client.patch(
+            f"/posts/{post_id}",
+            json={
+                "title": "New cached title",
+            },
+        )
+
+        assert update_response.status_code == 200
+
+        updated_data = update_response.json()
+
+        assert updated_data["id"] == post_id
+        assert updated_data["title"] == "New cached title"
+        assert updated_data["content"] == "Original cached content"
+
+        assert await redis_client.get(cache_key) is None
+
+        session_factory = get_session_factory()
+
+        async with session_factory() as session:
+            db_post = await session.get(Post, post_id)
+
+            assert db_post is not None
+            assert db_post.id == post_id
+            assert db_post.title == "New cached title"
+            assert db_post.content == "Original cached content"
+
+        second_get_response = await client.get(f"/posts/{post_id}")
+
+        assert second_get_response.status_code == 200
+
+        second_get_data = second_get_response.json()
+
+        assert second_get_data["id"] == post_id
+        assert second_get_data["title"] == "New cached title"
+        assert second_get_data["content"] == "Original cached content"
+
+        new_cached_payload = await redis_client.get(cache_key)
+
+        assert new_cached_payload is not None
+
+        new_cached_post = PostRead.model_validate_json(new_cached_payload)
+
+        assert new_cached_post.id == post_id
+        assert new_cached_post.title == "New cached title"
+        assert new_cached_post.content == "Original cached content"
+
+    finally:
+        if cache_key is not None:
+            await redis_client.delete(cache_key)
+
+        await redis_client.aclose()
