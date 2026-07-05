@@ -26,8 +26,7 @@ def get_redis(request: Request) -> Redis:
 
     if redis_client is None:
         raise RuntimeError(
-            "Redis client is not initialized"
-            "Make sure FastAPI lifespan is running",
+            "Redis client is not initializedMake sure FastAPI lifespan is running",
         )
 
     return redis_client

@@ -53,7 +53,7 @@ async def readiness() -> ReadinessResponse:
         status="ready",
         checks={
             "application": "ok",
-        }
+        },
     )
 
 
@@ -61,7 +61,7 @@ async def readiness() -> ReadinessResponse:
     "/version",
     response_model=VersionResponse,
     status_code=status.HTTP_200_OK,
-    summary="Получить версию сервиса"
+    summary="Получить версию сервиса",
 )
 async def version() -> VersionResponse:
     settings = get_settings()

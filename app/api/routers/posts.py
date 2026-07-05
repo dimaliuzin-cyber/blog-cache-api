@@ -25,7 +25,7 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 async def get_post_service(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    redis_client: Annotated[Redis, Depends(get_redis)]
+    redis_client: Annotated[Redis, Depends(get_redis)],
 ) -> PostService:
     return PostService(
         session=session,

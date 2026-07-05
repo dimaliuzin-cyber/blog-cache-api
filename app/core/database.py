@@ -30,7 +30,7 @@ def get_engine() -> AsyncEngine:
             echo=settings.app_env == "local",
             pool_pre_ping=True,
         )
-    
+
     return _engine
 
 

@@ -9,22 +9,22 @@ from pydantic_settings import (
 
 
 class Settings(BaseSettings):
-    app_name: str = Field(description="Техническое имя сервиса.")
-    app_title: str = Field(description="Название приложения для OpenAPI.")
-    app_description: str = Field(description="Описание приложения для OpenAPI.")
+    app_name: str = Field(description="Техническое имя сервиса")
+    app_title: str = Field(description="Название приложения для OpenAPI")
+    app_description: str = Field(description="Описание приложения для OpenAPI")
     app_env: Literal["local", "test", "staging", "production"] = Field(
-        description="Окружение, в котором запущено приложение.",
+        description="Окружение, в котором запущено приложение",
     )
-    app_version: str = Field(description="Версия приложения.")
-    api_version: str = Field(description="Версия API.")
+    app_version: str = Field(description="Версия приложения")
+    api_version: str = Field(description="Версия API")
 
-    database_url: str = Field(description="URL подключения к PostgreSQL.")
-    redis_url: str = Field(description="URL подключения к Redis.")
+    database_url: str = Field(description="URL подключения к PostgreSQL")
+    redis_url: str = Field(description="URL подключения к Redis")
 
     post_cache_ttl_seconds: int = Field(
         default=300,
         gt=0,
-        description="Время жизни кеша поста в Redis в секундах.",
+        description="Время жизни кеша поста в Redis в секундах",
     )
 
     model_config = SettingsConfigDict(

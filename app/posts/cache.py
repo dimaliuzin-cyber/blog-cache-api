@@ -15,7 +15,7 @@ class PostCache:
 
     def build_key(self, post_id: int) -> str:
         return f"post:{post_id}"
-    
+
     async def get_post(self, post_id: int) -> PostRead | None:
         key = self.build_key(post_id)
 
@@ -23,13 +23,13 @@ class PostCache:
 
         if cached_data is None:
             return None
-        
+
         try:
             return PostRead.model_validate_json(cached_data)
         except ValidationError:
             await self.delete_post(post_id)
             return None
-        
+
     async def set_post(self, post: PostRead) -> None:
         key = self.build_key(post.id)
         payload = post.model_dump_json()
@@ -43,4 +43,4 @@ class PostCache:
     async def delete_post(self, post_id: int) -> None:
         key = self.build_key(post_id)
 
-        await self._redis.delete(key) 
+        await self._redis.delete(key)

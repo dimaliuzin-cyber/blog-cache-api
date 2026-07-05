@@ -20,12 +20,12 @@ class PostRepository:
         await self._session.refresh(post)
 
         return post
-    
+
     async def get_post_by_id(self, post_id: int) -> Post | None:
         post = await self._session.get(Post, post_id)
 
         return post
-    
+
     async def update_post(
         self,
         post_id: int,
@@ -35,7 +35,7 @@ class PostRepository:
 
         if post is None:
             return None
-        
+
         update_data = post_update.model_dump(
             exclude_unset=True,
             exclude_none=True,
@@ -51,13 +51,13 @@ class PostRepository:
         await self._session.refresh(post)
 
         return post
-    
+
     async def delete_post(self, post_id: int) -> Post | None:
         post = await self.get_post_by_id(post_id)
 
         if post is None:
             return None
-        
+
         await self._session.delete(post)
         await self._session.flush()
 

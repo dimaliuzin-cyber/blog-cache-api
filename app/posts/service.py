@@ -33,26 +33,26 @@ class PostService:
         await self._session.refresh(post)
 
         return post
-    
+
     async def get_post(self, post_id: int) -> PostRead:
         if self._cache is not None:
             cached_post = await self._cache.get_post(post_id)
 
             if cached_post is not None:
                 return cached_post
-        
+
         post = await self._repository.get_post_by_id(post_id)
 
         if post is None:
             raise PostNotFoundError(post_id)
-        
+
         post_read = PostRead.model_validate(post)
 
         if self._cache is not None:
             await self._cache.set_post(post_read)
 
         return post_read
-    
+
     async def update_post(
         self,
         post_id: int,
@@ -65,28 +65,28 @@ class PostService:
 
         if post is None:
             raise PostNotFoundError(post_id)
-        
+
         await self._commit_transaction()
         await self._session.refresh(post)
 
         if self._cache is not None:
             await self._cache.delete_post(post_id)
-        
+
         return post
-    
+
     async def delete_post(self, post_id: int) -> Post:
         post = await self._repository.delete_post(post_id)
 
         if post is None:
             raise PostNotFoundError(post_id)
-        
+
         await self._commit_transaction()
 
         if self._cache is not None:
             await self._cache.delete_post(post_id)
 
         return post
-    
+
     async def _commit_transaction(self) -> None:
         try:
             await self._session.commit()

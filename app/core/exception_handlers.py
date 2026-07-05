@@ -17,11 +17,7 @@ def build_error_response(
     details: dict[str, Any] | None = None,
 ) -> JSONResponse:
     payload = ErrorResponse(
-        error=ErrorData(
-            code=code,
-            message=message,
-            details=details or {}
-        ),
+        error=ErrorData(code=code, message=message, details=details or {}),
     )
 
     return JSONResponse(

@@ -65,7 +65,7 @@ async def test_get_post_stores_post_in_redis(
 
     try:
         assert await redis_client.get(cache_key) is None
-        
+
         response = await client.get(f"/posts/{post_id}")
         assert response.status_code == 200
 
@@ -145,6 +145,114 @@ async def test_delete_post_invalidates_redis_cache(
 
         assert delete_response.status_code == 204
         assert await redis_client.get(cache_key) is None
+
+        get_response_after_delete = await client.get(f"/posts/{post_id}")
+
+        assert get_response_after_delete.status_code == 404
+        assert await redis_client.get(cache_key) is None
+    finally:
+        await redis_client.delete(cache_key)
+        await redis_client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_get_post_returns_post_from_redis_when_cache_exists(
+    client: AsyncClient,
+) -> None:
+    redis_client = get_redis_client()
+
+    create_response = await client.post(
+        "/posts",
+        json={
+            "title": "Original title",
+            "content": "Original content",
+        },
+    )
+
+    post_id = create_response.json()["id"]
+    cache_key = f"post:{post_id}"
+
+    await redis_client.delete(cache_key)
+
+    try:
+        first_response = await client.get(f"/posts/{post_id}")
+
+        assert first_response.status_code == 200
+        assert first_response.json()["title"] == "Original title"
+        assert await redis_client.get(cache_key) is not None
+
+        session_factory = get_session_factory()
+
+        async with session_factory() as session:
+            post = await session.get(Post, post_id)
+
+            assert post is not None
+
+            post.title = "Changed directly in PostgreSQL"
+            post.content = "Changed directly in PostgreSQL"
+
+            await session.commit()
+
+        second_response = await client.get(f"/posts/{post_id}")
+
+        assert second_response.status_code == 200
+
+        data = second_response.json()
+
+        assert data["id"] == post_id
+        assert data["title"] == "Original title"
+        assert data["content"] == "Original content"
+    finally:
+        await redis_client.delete(cache_key)
+        await redis_client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_get_post_after_update_returns_fresh_post_not_stale_cache(
+    client: AsyncClient,
+) -> None:
+    redis_client = get_redis_client()
+
+    create_response = await client.post(
+        "/posts",
+        json={
+            "title": "Old title",
+            "content": "Original content",
+        },
+    )
+
+    post_id = create_response.json()["id"]
+    cache_key = f"post:{post_id}"
+
+    try:
+        first_get_response = await client.get(f"/posts/{post_id}")
+
+        assert first_get_response.status_code == 200
+        assert first_get_response.json()["title"] == "Old title"
+        assert await redis_client.get(cache_key) is not None
+
+        update_response = await client.patch(
+            f"/posts/{post_id}",
+            json={
+                "title": "New title",
+            },
+        )
+
+        assert update_response.status_code == 200
+        assert update_response.json()["title"] == "New title"
+        assert await redis_client.get(cache_key) is None
+
+        second_get_response = await client.get(f"/posts/{post_id}")
+
+        assert second_get_response.status_code == 200
+
+        data = second_get_response.json()
+
+        assert data["id"] == post_id
+        assert data["title"] == "New title"
+        assert data["content"] == "Original content"
+
+        assert await redis_client.get(cache_key) is not None
     finally:
         await redis_client.delete(cache_key)
         await redis_client.aclose()
