@@ -20,7 +20,7 @@ from app.schemas.posts import (
 )
 
 
-router = APIRouter(prefix="/posts", tags=["posts"])
+router = APIRouter(prefix="/posts", tags=["Управление постами"])
 
 
 async def get_post_service(
@@ -38,6 +38,12 @@ async def get_post_service(
     response_model=PostRead,
     status_code=status.HTTP_201_CREATED,
     summary="Создать пост",
+    description=(
+        "Создает новый пост в PostgreSQL. "
+        "Redis при создании не заполняется сразу: запись попадает в кеш при первом чтении "
+        "через GET /posts/{post_id}."
+    ),
+    response_description="Созданный пост",
 )
 async def create_post(
     post_create: PostCreate,
@@ -53,9 +59,16 @@ async def create_post(
     response_model=PostRead,
     status_code=status.HTTP_200_OK,
     summary="Получить пост по id",
+    description=(
+        "Возвращает пост по его идентификатору. "
+        "Сначала приложение проверяет наличие поста в Redis. "
+        "Если запись найдена, данные возвращаются из кеша. "
+        "Если записи нет, пост загружается из PostgreSQL и сохраняется в Redis с TTL."
+    ),
+    response_description="Найденный пост",
 )
 async def get_post(
-    post_id: Annotated[int, Path(gt=0)],
+    post_id: Annotated[int, Path(gt=0, description="Уникальный идентификатор поста")],
     service: Annotated[PostService, Depends(get_post_service)],
 ) -> PostRead:
     post = await service.get_post(post_id)
@@ -67,10 +80,16 @@ async def get_post(
     "/{post_id}",
     response_model=PostRead,
     status_code=status.HTTP_200_OK,
-    summary="Обновить пост по id",
+    summary="Частично обновить пост по id",
+    description=(
+        "Обновляет title и/или content существующего поста. "
+        "После успешного обновления старая версия поста удаляется из Redis, "
+        "чтобы следующий GET-запрос получил свежие данные из PostgreSQL."
+    ),
+    response_description="Обновленный пост",
 )
 async def update_post(
-    post_id: Annotated[int, Path(gt=0)],
+    post_id: Annotated[int, Path(gt=0, description="Уникальный идентификатор поста")],
     post_update: PostUpdate,
     service: Annotated[PostService, Depends(get_post_service)],
 ) -> PostRead:
@@ -86,9 +105,14 @@ async def update_post(
     "/{post_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Удалить пост по id",
+    description=(
+        "Удаляет пост из PostgreSQL и инвалидирует связанную запись в Redis. "
+        "После удаления endpoint возвращает 204 No Content."
+    ),
+    response_description="Пост успешно удален",
 )
 async def delete_post(
-    post_id: Annotated[int, Path(gt=0)],
+    post_id: Annotated[int, Path(gt=0, description="Уникальный идентификатор поста")],
     service: Annotated[PostService, Depends(get_post_service)],
 ) -> Response:
     await service.delete_post(post_id)

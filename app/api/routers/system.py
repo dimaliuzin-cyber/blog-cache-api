@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 
 
-router = APIRouter(tags=["system"])
+router = APIRouter(tags=["Системные проверки"])
 
 
 class HealthResponse(BaseModel):
@@ -30,7 +30,12 @@ class VersionResponse(BaseModel):
     "/health",
     response_model=HealthResponse,
     status_code=status.HTTP_200_OK,
-    summary="Проверить, что сервис жив",
+    summary="Проверить, что приложение запущено",
+    description=(
+        "Проверка, что FastAPI-приложение работает и отвечает на HTTP-запросы. "
+        "Используется для базового healthcheck."
+    ),
+    response_description="Текущий статус приложения.",
 )
 async def health() -> HealthResponse:
     settings = get_settings()
@@ -46,7 +51,13 @@ async def health() -> HealthResponse:
     "/readiness",
     response_model=ReadinessResponse,
     status_code=status.HTTP_200_OK,
-    summary="Проверить, что сервис готов принимать трафик",
+    summary="Проверить готовность принимать трафик",
+    description=(
+        "Проверяет, готово ли приложение принимать входящие запросы. "
+        "В реальном проекте здесь проверяются база данных, Redis "
+        "и другие внешние зависимости."
+    ),
+    response_description="Статус готовности приложения.",
 )
 async def readiness() -> ReadinessResponse:
     return ReadinessResponse(
@@ -62,6 +73,11 @@ async def readiness() -> ReadinessResponse:
     response_model=VersionResponse,
     status_code=status.HTTP_200_OK,
     summary="Получить версию сервиса",
+    description=(
+        "Возвращает техническую информацию о сервисе: название приложения, "
+        "версию приложения и версию API."
+    ),
+    response_description="Информация о версии сервиса.",
 )
 async def version() -> VersionResponse:
     settings = get_settings()

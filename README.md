@@ -55,6 +55,9 @@ REST API для блога с возможностью кеширования п
 - единый формат ошибок;
 - Docker Compose окружение с API, PostgreSQL и Redis;
 - миграции Alembic;
+- логирование ключевых операций;
+- request id для трассировки запросов;
+- возврат `X-Request-ID` в HTTP-ответах;
 - unit-тесты сервисного слоя;
 - интеграционные тесты API;
 - интеграционные тесты логики кеширования.
@@ -113,6 +116,9 @@ app/
 │   ├── database.py
 │   ├── errors.py
 │   ├── exception_handlers.py
+│   ├── logging_config.py
+│   ├── middleware.py
+│   ├── request_context.py
 │   └── redis.py
 ├── posts/
 │   ├── cache.py

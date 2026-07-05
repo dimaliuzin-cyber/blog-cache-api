@@ -14,8 +14,17 @@ class PostCreate(BaseModel):
         str_strip_whitespace=True,
     )
 
-    title: str = Field(min_length=1, max_length=200)
-    content: str = Field(min_length=1)
+    title: str = Field(
+        min_length=1,
+        max_length=200,
+        description="Заголовок поста",
+        examples=["First post"],
+    )
+    content: str = Field(
+        min_length=1,
+        description="Текст поста",
+        examples=["This is the content of the post."],
+    )
 
 
 class PostUpdate(BaseModel):
@@ -24,8 +33,19 @@ class PostUpdate(BaseModel):
         str_strip_whitespace=True,
     )
 
-    title: str | None = Field(default=None, min_length=1, max_length=200)
-    content: str | None = Field(default=None, min_length=1)
+    title: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description="Новый заголовок поста",
+        examples=["Updated title"],
+    )
+    content: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Новый текст поста",
+        examples=["Updated post content."],
+    )
 
     @model_validator(mode="after")
     def validate_at_least_one_field(self) -> "PostUpdate":
@@ -38,11 +58,14 @@ class PostUpdate(BaseModel):
 class PostRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    title: str
-    content: str
-    created_at: datetime
-    updated_at: datetime
+    id: int = Field(description="Уникальный идентификатор поста", examples=[1])
+    title: str = Field(description="Заголовок поста", examples=["First post"])
+    content: str = Field(
+        description="Текст поста",
+        examples=["This is the content of the post."],
+    )
+    created_at: datetime = Field(description="Дата и время создания поста")
+    updated_at: datetime = Field(description="Дата и время последнего обновления поста")
 
 
 class PostListItem(BaseModel):
